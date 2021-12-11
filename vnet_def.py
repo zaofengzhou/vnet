@@ -237,15 +237,15 @@ class res_block(nn.Module):  ##nn.Module
         self.conv2 = nn.Conv3d(in_channels=i_channel, out_channels=o_channel, kernel_size=5, stride=1, padding=2)
 
 
-        self.conv3 = nn.Conv3d(in_channels=o_channel, out_channels=o_channel, kernel_size=2, stride=2).cuda()  ###  卷积下采样
+        self.conv3 = nn.Conv3d(in_channels=o_channel, out_channels=o_channel, kernel_size=2, stride=2)  # .cuda()  ###  卷积下采样
 
-        self.conv4 = nn.ConvTranspose3d(in_channels=o_channel, out_channels=o_channel, kernel_size=2, stride=2).cuda()   ###  反卷积上采样
+        self.conv4 = nn.ConvTranspose3d(in_channels=o_channel, out_channels=o_channel, kernel_size=2, stride=2)  # .cuda()   ###  反卷积上采样
 
-        self.conv5 = nn.Conv3d(in_channels=i_channel, out_channels=o_channel, kernel_size=1, stride=1).cuda()   ###  点卷积
+        self.conv5 = nn.Conv3d(in_channels=i_channel, out_channels=o_channel, kernel_size=1, stride=1)  # .cuda()   ###  点卷积
 
-        self.bn = nn.BatchNorm3d(i_channel).cuda()
-        self.bn1 = nn.BatchNorm3d(o_channel).cuda()
-        self.prelu = nn.ELU().cuda()
+        self.bn = nn.BatchNorm3d(i_channel)  # .cuda()
+        self.bn1 = nn.BatchNorm3d(o_channel)  # .cuda()
+        self.prelu = nn.ELU()  # .cuda()
         self.lei = lei
         self.drop = nn.Dropout3d()
 
