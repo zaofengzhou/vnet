@@ -62,7 +62,7 @@ start = time.perf_counter()  # 记录训练开始时间
 train_loss_list = []  # 用来记录训练损失
 valid_loss_list = []  # 用来记录验证损失
 
-minnum = 0  # 寻找最小损失，损失最小意味着模型最佳
+min_loss = 0  # 寻找最小损失，损失最小意味着模型最佳
 mome = 0.99  # 动量，可以认为是前冲的速度
 
 train_loss1 = 0.0
@@ -77,7 +77,7 @@ for epoch in range(1, EPOCH + 1):  # 每一个epoch  训练一轮   检测一轮
     train_loss1 = train_loss  # 训练损失
     train_loss_list.append(train_loss)  # 记录每个epoch训练损失
     train_loss_pd = pd.DataFrame(train_loss_list)  # 存成excel格式
-    train_loss_pd.to_excel(zhibiao_path + "/第%d个epoch的训练损失.xls" % (epoch))
+    train_loss_pd.to_excel(zhibiao_path + "/第%d个epoch的训练损失.xls" % epoch)
 
     torch.save(model, model_path + fengefu + 'train_model.pth')  # 保存训练模型
     torch.cuda.empty_cache()  # 清理内存
@@ -88,17 +88,17 @@ for epoch in range(1, EPOCH + 1):  # 每一个epoch  训练一轮   检测一轮
         dice1 = valid_zhibiao[2]  # 记录dice值
         valid_loss_list.append(valid_loss)  # 验证损失
         valid_loss_pd = pd.DataFrame(valid_loss_list)  # 存成excel格式
-        valid_loss_pd.to_excel(zhibiao_path + "/第%d个epoch的验证损失.xls" % (epoch))
+        valid_loss_pd.to_excel(zhibiao_path + "/第%d个epoch的验证损失.xls" % epoch)
 
         if epoch == valid_epoch_each:  # 第一此验证，如：epoch==5
             torch.save(model, model_path + fengefu + 'best_model.pth')  # 保存为最好模型
-            minnum = valid_loss  # 刚开始，令min为该loss
-            print("minnum", minnum)  # 打印最小验证损失
+            min_loss = valid_loss  # 刚开始，令min为该loss
+            print("min_loss", min_loss)  # 打印最小验证损失
 
-        elif valid_loss < minnum:  # 如果验证损失 比 记录中最小的验证损失 更小
+        elif valid_loss < min_loss:  # 如果验证损失 比 当前最小的验证损失 更小
 
-            print("valid_loss < minnum", valid_loss, "<", minnum)  # 打印 这一轮验证损失更小，所以准备更新了
-            minnum = valid_loss  # 最小验证损失 更新为 这一轮验证损失
+            print("valid_loss < min_loss", valid_loss, "<", min_loss)  # 打印 这一轮验证损失更小，所以准备更新了
+            min_loss = valid_loss  # 最小验证损失 更新为 这一轮验证损失
             torch.save(model, model_path + fengefu + 'best_model.pth')  # 保存为最好模型，这里是直接覆盖了之前的best_model
             zhibiao = valid_zhibiao  # 把指标也记录一下
             zhibiao_pd = pd.DataFrame(zhibiao)  # 存成excel格式

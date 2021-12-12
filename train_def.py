@@ -101,7 +101,8 @@ def test_model(model, device, test_loader, epoch, test):  # 加了个test  1是�
                 name = 'Test'
             else:
                 name = 'Valid'
-            tqrr.set_description("{} Epoch : {} \t {} Loss : {:.6f} \t tn, fp, fn, tp:  {:.0f}  {:.0f}  {:.0f}  {:.0f} ".format(name,epoch,name, loss.item(),tn, fp, fn, tp))
+            tqrr.set_description("{} Epoch : {} \t {} Loss : {:.6f} \t tn, fp, fn, tp:  {:.0f}  {:.0f}  {:.0f}  {:.0f} "
+                                 .format(name, epoch, name, loss.item(), tn, fp, fn, tp))
             if test:
                 data_cpu = data.clone().cpu()
                 my_output_cpu = output.clone().cpu()
@@ -126,30 +127,30 @@ def test_model(model, device, test_loader, epoch, test):  # 加了个test  1是�
 class myDataset(Dataset):
 
     def __init__(self, data_path, label_path):  ###  transform 我没写
-        self.data = self.get_img_label(data_path)  ## 图的位置列表
-        self.label = self.get_img_label(label_path)  ## 标签的位置列表
+        self.img_path = self.get_absolute_path(data_path)  ## 图的位置列表
+        self.label_path = self.get_absolute_path(label_path)  ## 标签的位置列表
 
-        self.annos_img = self.get_annos_label(self.data)  # 图的位置列表 输入进去  吐出  结节附近的图的【【图片位置，结节中心，半径】列表】
-        self.annos_label = self.get_annos_label(self.label)  # 112
+        self.annos_img = self.get_annos_label(self.img_path)  # 图的位置列表 输入进去  吐出  结节附近的图的【【图片位置，结节中心，半径】列表】
+        self.annos_label = self.get_annos_label(self.label_path)  # 112
 
     def __getitem__(self, index):
         img_all = self.annos_img[index]
         label_all = self.annos_label[index]
         img = np.load(img_all[0])  # 载入的是图片地址
         label = np.load(label_all[0])  # 载入的是label地址
-        cut_list = []  ##  切割需要用的数
+        cut_list = []  # 切割需要用的数
 
-        for i in range(len(img.shape)):  ###  0,1,2   →  z,y,x
+        for i in range(len(img.shape)):  # 0,1,2   →  z,y,x
             if i == 0:
-                a = img_all[1][-i - 1] - 8  ### z
+                a = img_all[1][-i - 1] - 8  # z
                 b = img_all[1][-i - 1] + 8
             else:
-                a = img_all[1][-i - 1] - 48  ### z
-                b = img_all[1][-i - 1] + 48  ###
+                a = img_all[1][-i - 1] - 48  # y,x
+                b = img_all[1][-i - 1] + 48
             if a < 0:
                 if i == 0:
                     a = 0
-                    b = 96
+                    b = 16
                 else:
                     a = 0
                     b = 96
@@ -166,29 +167,28 @@ class myDataset(Dataset):
             cut_list.append(a)
             cut_list.append(b)
 
-        img = img[cut_list[0]:cut_list[1], cut_list[2]:cut_list[3], cut_list[4]:cut_list[5]]  ###  z,y,x
-        label = label[cut_list[0]:cut_list[1], cut_list[2]:cut_list[3], cut_list[4]:cut_list[5]]  ###  z,y,x
+        img = img[cut_list[0]:cut_list[1], cut_list[2]:cut_list[3], cut_list[4]:cut_list[5]]  # z,y,x
+        label = label[cut_list[0]:cut_list[1], cut_list[2]:cut_list[3], cut_list[4]:cut_list[5]]  # z,y,x
 
         # plot_3d(img)
         # plot_3d(label)
-        img = np.expand_dims(img, 0)  ##(1, 96, 96, 96)
+        img = np.expand_dims(img, 0)  # (1, 96, 96, 96)
         img = torch.tensor(img)
         img = img.type(torch.FloatTensor)
-        label = torch.Tensor(label).long()  ##(96, 96, 96) label不用升通道维度
+        label = torch.Tensor(label).long()  # (96, 96, 96) label不用升通道维度
         torch.cuda.empty_cache()
-        return img, label  ### 从这里出去还是96*96*96
+        return img, label  # 从这里出去还是96*96*96
 
     def __len__(self):
         return len(self.annos_img)
 
     @staticmethod
-    def get_img_label(data_path):  ###  list 地址下所有图片的绝对地址
+    def get_absolute_path(data_path):  # list 地址下所有图片的绝对地址
 
         img_path = []
         for t in data_path:  ###  打开subset0，打开subset1
             data_img_list = os.listdir(t)  ## 列出图
-            img_path += [os.path.join(t, j) for j in
-                         data_img_list]  ##'/public/home/menjingru/dataset/sk_output/bbox_image/subset1/1.3.6.1.4.1.14519.5.2.1.6279.6001.104562737760173137525888934217.npy'
+            img_path += [os.path.join(t, j) for j in data_img_list]
         img_path.sort()
         return img_path  ##返回的也就是图像路径 或 标签路径
 
@@ -205,9 +205,8 @@ class myDataset(Dataset):
                 name = u.split(r"/")[-1].split(".np")[0]  # 拿到图的名字
             for one in annos_list:  # 遍历有结节的图
                 if one[0] == name:  # 如果有结节的图的名字 == 输入的图的名字
-                    for l in range(len(one[1])):  # 数一数有几个结节
-                        annos_path.append(
-                            [u, [one[1][l][0], one[1][l][1], one[1][l][2]], one[1][l][3]])  # 图的地址，结节的中心，结节的半径
+                    for i in range(len(one[1])):  # 数一数有几个结节
+                        annos_path.append([u, [one[1][i][0], one[1][i][1], one[1][i][2]], one[1][i][3]])  # 图的地址，结节的中心，结节的半径
         return annos_path  # ###半径最大才12
 
 
